@@ -1,0 +1,32 @@
+struct Point {
+    int x;
+    float y;
+};
+
+struct Circle {
+    float radius;
+    int segments;
+};
+
+int mainVar;
+float anotherVar;
+bool check;
+
+mainVar = 3;
+anotherVar = 2.5;
+check = true;
+
+int temp;
+temp = mainVar + 10;
+
+float ratio;
+ratio = anotherVar * 1.5;
+
+{
+    int local;
+    local = temp - 2;
+    ratio = ratio + local;
+}
+
+int endVar;
+endVar = mainVar + temp;

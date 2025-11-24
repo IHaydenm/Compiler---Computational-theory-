@@ -1,0 +1,63 @@
+struct Point {
+    int x;
+    float y;
+};
+
+struct Circle {
+    float radius;
+    int segments;
+};
+
+struct Rectangle {
+    int width;
+    int height;
+    float area;
+};
+
+int mainVar;
+float anotherVar;
+bool flagTrue;
+bool flagFalse;
+int counter;
+float result;
+
+int main;
+main = 3 + 5;
+
+mainVar = 10;
+anotherVar = 2.5;
+flagTrue = true;
+flagFalse = false;
+
+counter = mainVar + 4 - 2;
+result = anotherVar * 3.14 / 2.0;
+
+{
+    int localA;
+    float localB;
+    localA = 5;
+    localB = 1.25;
+    result = result + localB * 2;
+}
+
+{
+    int nestedVar;
+    nestedVar = 7;
+    counter = counter + nestedVar;
+}
+
+int i;
+i = 0;
+while (i < 10) {
+    counter = counter + i;
+    i = i + 1;
+}
+
+struct Vector3 {
+    float x;
+    float y;
+    float z;
+};
+
+int finalResult;
+finalResult = counter + (int)result;

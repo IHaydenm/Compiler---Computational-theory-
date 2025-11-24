@@ -1,0 +1,32 @@
+int a;
+float b;
+bool flag;
+
+a = 10;
+b = 3.2;
+flag = true;
+
+x = 5;            // Error: x no declarado
+flag = 3;         // Error: tipo incompatible (int → bool)
+
+int a;            // Error: redeclaración de 'a'
+
+{
+    int b;
+    b = 2;
+    a = b + 3;
+}
+
+float val;
+val = a + b;
+
+{
+    bool flag;
+    flag = false;
+    val = val + 1.5;
+}
+
+bool done;
+done = flag;
+
+done = a + 2;     // Error: tipo incompatible

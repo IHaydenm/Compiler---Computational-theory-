@@ -1,0 +1,39 @@
+int a;
+float b;
+bool flag;
+
+a = 10;
+b = 5.5;
+flag = true;
+
+int x;
+float y;
+x = a + 5;
+y = b / 2.0;
+
+float mix;
+mix = x + y;
+
+int z;
+z = x + 3 * 2;
+
+bool test;
+test = false;
+
+{
+    int local;
+    local = 5;
+    z = z + local;
+}
+
+float division;
+division = (z + y) / 3.0;
+
+int total;
+total = z + a;
+
+bool done;
+done = true;
+
+int endVar;
+endVar = total - 1;
