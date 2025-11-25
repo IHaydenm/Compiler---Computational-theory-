@@ -223,8 +223,6 @@ LToken lex_next_token() {
             exit(1);
         }
     }
-
-    /* Two-char operators */
     if (c == '=') {
         getch_lex();
         if (match_lex('=')) return make_ltoken(L_T_EQ, "==", 2, start_line, start_col);
@@ -279,23 +277,19 @@ LToken lex_next_token() {
         }
     }
 }
-
 #define MAX_LEX 256
-
 typedef enum {
-    T_EOF, T_INT, T_FLOAT, T_BOOL, T_VOID, T_DOUBLE,
-    T_ID, T_INT_LIT, T_FLOAT_LIT, T_TRUE, T_FALSE,
+    T_EOF, T_IF, T_ELIF, T_ELSE, T_INT, T_FLOAT, T_BOOL, T_VOID, T_DOUBLE,
+    T_ID, T_INT_LIT, T_FLOAT_LIT, T_TRUE, T_FALSE, T_AND, T_OR, T_NOT,
     T_SEMI, T_EQ, T_PLUS, T_MINUS, T_MUL, T_DIV,
-    T_LBRACE, T_RBRACE, T_STRUCT, T_UNKNOWN
+    T_GT, T_LT, T_GE, T_LE,
+    T_LBRACE, T_RBRACE, T_LPAREN, T_RPAREN, T_STRUCT, T_UNKNOWN
 } TokenType;
-
-/* Token used by parser / semantic code */
 typedef struct {
     TokenType type;
     char *lexeme;
     int line;
 } Token;
-
 Token make_token(TokenType type, const char *lexeme, int line)
 {
     Token t;
@@ -304,49 +298,73 @@ Token make_token(TokenType type, const char *lexeme, int line)
     t.line = line;
     return t;
 }
-
-
 Token make_parser_token(TokenType type, const char *lex) {
     Token t;
     t.type = type;
     t.lexeme = strdup(lex ? lex : "");
-    t.line = 1; /* will overwrite with real line when mapping */
+    t.line = 1;
     return t;
 }
 
-/* Parser's current token */
 static Token cur_tok;
-
-/* Adapter: convert an LToken (from lexer) -> parser Token */
 Token ltoken_to_parser_token(const LToken *lt) {
     Token t;
     t.lexeme = strdup(lt->lexeme);
     t.line = lt->line;
-
-    /* Default */
     t.type = T_UNKNOWN;
-
     switch (lt->type) {
-        case L_T_EOF: t.type = T_EOF; break;
-        case L_T_INT_LITERAL: t.type = T_INT_LIT; break;
-        case L_T_FLOAT_LITERAL: t.type = T_FLOAT_LIT; break;
-        case L_T_ID: t.type = T_ID; break;
-        case L_T_STRING_LITERAL: t.type = T_UNKNOWN; break;
-
-        /* Operators */
-        case L_T_PLUS: t.type = T_PLUS; break;
-        case L_T_MINUS: t.type = T_MINUS; break;
-        case L_T_STAR: t.type = T_MUL; break;
-        case L_T_SLASH: t.type = T_DIV; break;
-        case L_T_SEMICOLON: t.type = T_SEMI; break;
-        case L_T_LBRACE: t.type = T_LBRACE; break;
-        case L_T_RBRACE: t.type = T_RBRACE; break;
-        case L_T_ASSIGN: /* single '=' -> used as assignment in parser */ t.type = T_EQ; break;
-        case L_T_EQ: /* '==' - not used by parser for assignment; map to T_UNKNOWN */ t.type = T_UNKNOWN; break;
-
+        case L_T_EOF: t.type = T_EOF; 
+            break;
+        case L_T_INT_LITERAL: t.type = T_INT_LIT;
+            break;
+        case L_T_FLOAT_LITERAL: t.type = T_FLOAT_LIT; 
+            break;
+        case L_T_ID: t.type = T_ID; 
+            break;
+        case L_T_STRING_LITERAL: t.type = T_UNKNOWN;
+            break;
+        case L_T_LPAREN: t.type = T_LPAREN; 
+            break;
+        case L_T_RPAREN: t.type = T_RPAREN;
+            break;
+        case L_T_PLUS: t.type = T_PLUS; 
+            break;
+        case L_T_MINUS: t.type = T_MINUS; 
+            break;
+        case L_T_STAR: t.type = T_MUL; 
+            break;
+        case L_T_SLASH: t.type = T_DIV; 
+            break;
+        case L_T_SEMICOLON: t.type = T_SEMI; 
+            break;
+        case L_T_LBRACE: t.type = T_LBRACE; 
+            break;
+        case L_T_RBRACE: t.type = T_RBRACE; 
+            break;
+        case L_T_ASSIGN: t.type = T_EQ; 
+            break;
+        case L_T_AND: t.type = T_AND;
+            break;
+        case L_T_OR: t.type = T_OR;
+            break;
+        case L_T_NOT: t.type = T_NOT;
+            break;
+        case L_T_EQ: t.type = T_UNKNOWN; break;
+        break;
+        case L_T_GT: t.type = T_GT; 
+            break;               
+        case L_T_LT: t.type = T_LT; 
+            break;               
+        case L_T_GE: t.type = T_GE; 
+            break;            
+        case L_T_LE: t.type = T_LE; 
+            break; 
+    
         case L_T_KEYWORD: {
-            /* For keywords, inspect lexeme to map to parser token types */
             if (strcmp(lt->lexeme, "int") == 0) t.type = T_INT;
+            else if(strcmp(lt->lexeme, "if") == 0) t.type = T_IF;
+            else if(strcmp(lt->lexeme, "elif") == 0) t.type = T_ELIF; //considered ELIF because it is easier to work
+            else if(strcmp(lt->lexeme, "else") == 0) t.type = T_ELSE;
             else if (strcmp(lt->lexeme, "float") == 0) t.type = T_FLOAT;
             else if (strcmp(lt->lexeme, "bool") == 0) t.type = T_BOOL;
             else if (strcmp(lt->lexeme, "void") == 0) t.type = T_VOID;
@@ -364,53 +382,51 @@ Token ltoken_to_parser_token(const LToken *lt) {
     }
     return t;
 }
-
-/* We'll implement a wrapper function that uses lexer to fetch the next LToken,
-   converts it to parser Token, and returns it. We'll keep a small internal buffer
-   because parser expects to free cur_tok.lexeme when advancing. */
-
 Token get_next_parser_token() {
     LToken lt = lex_next_token();
     Token t = ltoken_to_parser_token(&lt);
-    free_ltoken(&lt); /* we strdup'ed lexeme into parser token, so free lexer's copy */
+    free_ltoken(&lt);
     return t;
 }
-
-/* Helper to free parser token (lexeme) */
 void free_parser_token(Token *t) {
     if (t->lexeme) free(t->lexeme);
     t->lexeme = NULL;
 }
-
-/* ---------- AST and Parser (largely unchanged) ---------- */
-
 typedef enum { TYPE_INT, TYPE_FLOAT, TYPE_BOOL, TYPE_ERROR } VarType;
-
 const char* type_name(VarType t){
     switch(t){ case TYPE_INT: return "int"; case TYPE_FLOAT: return "float"; case TYPE_BOOL: return "bool"; default: return "error"; }
 }
-
-typedef enum { EXPR_ID, EXPR_INT_LIT, EXPR_FLOAT_LIT, EXPR_BOOL_LIT, EXPR_BINOP } ExprKind;
+typedef enum {
+    OP_ADD, OP_SUB, OP_MUL, OP_DIV,
+    OP_AND, OP_OR, OP_NOT,
+    OP_GT, OP_LT, OP_GE, OP_LE, OP_EQ,
+    OP_UNKNOWN
+} OpType;
+typedef enum { EXPR_ID, EXPR_INT_LIT, EXPR_FLOAT_LIT, EXPR_BOOL_LIT, EXPR_BINOP, EXPR_UNOP } ExprKind;
 typedef struct Expr {
     ExprKind kind;
-    VarType inferred_type; // filled by semantic analyzer
+    VarType inferred_type;
     int line;
     union {
         char *id; // EXPR_ID
         int ival; // EXPR_INT_LIT
         double fval; // EXPR_FLOAT_LIT
         int bval; // EXPR_BOOL_LIT
-        struct { char op; struct Expr *left, *right; } bin; // EXPR_BINOP
+        struct { OpType op; struct Expr *left, *right; } bin;
+        struct { OpType op; struct Expr *operand; } un;
     } u;
 } Expr;
 
 /* Statements: decl or assignment or block */
-typedef enum { STMT_DECL, STMT_ASSIGN, STMT_BLOCK } StmtKind;
+typedef enum { STMT_DECL, STMT_ASSIGN, STMT_BLOCK} StmtKind;
 typedef struct Stmt {
     StmtKind kind;
     int line;
     union {
-        struct { VarType vtype; char *id; } decl;
+        struct { VarType vtype; char *id; 
+                Expr *c;
+                struct Stmt *then_branch;
+                struct Stmt *else_branch;} decl;
         struct { char *id; Expr *expr; } assign;
         struct { struct Stmt **stmts; int n; } block;
     } u;
@@ -421,24 +437,20 @@ typedef struct {
     int n;
 } Program;
 
-/* Parser state helpers */
-void advance(); /* forward */
-Token next_token_from_lexer(); /* forward */
-
-/* convenience functions */
+void advance();
+Token next_token_from_lexer(); 
+/*====================FORWARDS=====================*/
 int is_eof_parser_token(TokenType t) { return t == T_EOF; }
 
-/* parser helper functions */
 int accept(TokenType t) { if (cur_tok.type == t) { advance(); return 1; } return 0; }
 int expect(TokenType t, const char *errMsg) {
     if (cur_tok.type == t) { advance(); return 1; }
     fprintf(stderr, "Parse error (line %d): expected %s but found '%s'\n", cur_tok.line, errMsg, cur_tok.lexeme);
     exit(1);
 }
-
-/* forward */
+/*===================FORWARD===================*/
 Expr* parse_expr();
-
+/*===================FORWARD===================*/
 VarType parse_type_token(TokenType t) {
     if (t == T_INT) return TYPE_INT;
     if (t == T_FLOAT) return TYPE_FLOAT;
@@ -495,11 +507,36 @@ Expr* make_bool_expr(int b, int ln) {
 Expr* make_id_expr(const char *id, int ln) {
     Expr *e = malloc(sizeof(Expr)); e->kind = EXPR_ID; e->line = ln; e->inferred_type = TYPE_ERROR; e->u.id = strdup(id); return e;
 }
-Expr* make_binop(char op, Expr *l, Expr *r, int ln) {
-    Expr *e = malloc(sizeof(Expr)); e->kind = EXPR_BINOP; e->line = ln; e->inferred_type = TYPE_ERROR; e->u.bin.op = op; e->u.bin.left = l; e->u.bin.right = r; return e;
+Expr* make_binop_expr(OpType op, Expr *l, Expr *r, int ln) {
+    Expr *e = malloc(sizeof(Expr));
+    e->kind = EXPR_BINOP;
+    e->line = ln;
+    e->inferred_type = TYPE_ERROR;
+    e->u.bin.op = op;
+    e->u.bin.left = l;
+    e->u.bin.right = r;
+    return e;
 }
-
-/* Parsing expressions with precedence: +-, then */
+Expr* make_unary_expr(OpType op, Expr *operand, int ln) {
+    Expr *e = malloc(sizeof(Expr));
+    e->kind = EXPR_UNOP;
+    e->line = ln;
+    e->inferred_type = TYPE_ERROR;
+    e->u.un.op = op;
+    e->u.un.operand = operand;
+    return e;
+}   
+/*========================FORWARDS=======================*/
+Expr* make_binop_expr();
+Expr* parse_primary();
+Expr* parse_unary();
+Expr* parse_muldiv();
+Expr* parse_add();
+Expr* parse_rel_expr();
+Expr* parse_and_expr();
+Expr* parse_or_expr();
+Expr* parse_expr();
+/*========================FORWARDS=======================*/
 Expr* parse_primary() {
     if (cur_tok.type == T_INT_LIT) {
         int v = atoi(cur_tok.lexeme);
@@ -519,35 +556,86 @@ Expr* parse_primary() {
         advance();
         return e;
     }
-    if (accept(T_LBRACE)) { // allow brace expr? not in grammar, put back
-        fprintf(stderr,"Parse error (line %d): unexpected '{' in expression\n", cur_tok.line); exit(1);
+    if (accept(T_LPAREN)) {
+        Expr *e = parse_expr();
+        expect(T_RPAREN, "right parenthesis");
+        return e;
     }
     fprintf(stderr,"Parse error (line %d): unexpected token '%s' in expression\n", cur_tok.line, cur_tok.lexeme);
     exit(1);
 }
-
-Expr* parse_muldiv() {
-    Expr *left = parse_primary();
-    while (cur_tok.type == T_MUL || cur_tok.type == T_DIV) {
-        char op = (cur_tok.type == T_MUL) ? '*' : '/';
+Expr* parse_unary() {
+    if (cur_tok.type == T_NOT) {
         int ln = cur_tok.line;
         advance();
-        Expr *right = parse_primary();
-        left = make_binop(op, left, right, ln);
+        Expr *operand = parse_unary();
+        return make_unary_expr(OP_NOT, operand, ln);
+    }
+    return parse_primary();
+}
+
+Expr* parse_muldiv() {
+    Expr *left = parse_unary();
+    while (cur_tok.type == T_MUL || cur_tok.type == T_DIV) {
+        OpType op = (cur_tok.type == T_MUL) ? OP_MUL : OP_DIV;
+        int ln = cur_tok.line;
+        advance();
+        Expr *right = parse_unary();
+        left = make_binop_expr(op, left, right, ln);
     }
     return left;
 }
-
-Expr* parse_expr() {
+Expr* parse_add() {
     Expr *left = parse_muldiv();
     while (cur_tok.type == T_PLUS || cur_tok.type == T_MINUS) {
-        char op = (cur_tok.type == T_PLUS) ? '+' : '-';
+        OpType op = (cur_tok.type == T_PLUS) ? OP_ADD : OP_SUB;
         int ln = cur_tok.line;
         advance();
         Expr *right = parse_muldiv();
-        left = make_binop(op, left, right, ln);
+        left = make_binop_expr(op, left, right, ln);
     }
     return left;
+}
+Expr* parse_rel_expr() {
+    Expr *left = parse_add();
+    while (cur_tok.type == T_GT || cur_tok.type == T_LT || cur_tok.type == T_GE || cur_tok.type == T_LE) {
+        OpType op;
+        int ln = cur_tok.line;
+        switch (cur_tok.type) {
+            case T_GT: op = OP_GT; break;
+            case T_LT: op = OP_LT; break;
+            case T_GE: op = OP_GE; break;
+            case T_LE: op = OP_LE; break;
+            default: op = OP_UNKNOWN; break;
+        }
+        advance();
+        Expr *right = parse_add();
+        left = make_binop_expr(op, left, right, ln);
+    }
+    return left;
+}
+Expr* parse_and_expr() {
+    Expr *left = parse_rel_expr();
+    while (cur_tok.type == T_AND) {
+        int ln = cur_tok.line;
+        advance();
+        Expr *right = parse_rel_expr();
+        left = make_binop_expr(OP_AND, left, right, ln);
+    }
+    return left;
+}
+Expr* parse_or_expr() {
+    Expr *left = parse_and_expr();
+    while (cur_tok.type == T_OR) {
+        int ln = cur_tok.line;
+        advance();
+        Expr *right = parse_and_expr();
+        left = make_binop_expr(OP_OR, left, right, ln);
+    }
+    return left;
+}
+Expr* parse_expr() {
+    return parse_or_expr();
 }
 
 Stmt* parse_assign() {
@@ -562,16 +650,73 @@ Stmt* parse_assign() {
     return s;
 }
 
-Stmt* parse_block(); /* forward */
+Stmt* parse_block();
+Stmt* parse_cond_decl();
 
 Stmt* parse_stmt() {
     if (cur_tok.type == T_INT || cur_tok.type == T_FLOAT || cur_tok.type == T_BOOL) return parse_decl();
     if (cur_tok.type == T_ID) return parse_assign();
     if (cur_tok.type == T_LBRACE) return parse_block();
     if(cur_tok.type == T_STRUCT) return parse_struct_decl();
+    if(cur_tok.type == T_IF || cur_tok.type == T_ELIF || cur_tok.type == T_ELSE) return parse_cond_decl();
     fprintf(stderr,"Parse error (line %d): unexpected token '%s' at statement start\n", cur_tok.line, cur_tok.lexeme);
     exit(1);
 }
+
+Stmt* parse_cond_decl() {
+    int ln = cur_tok.line;
+    expect(T_IF, "if");
+    expect(T_LPAREN, "(");
+    Expr *cond = parse_expr();
+    expect(T_RPAREN, ")");
+    Stmt *then_branch = parse_stmt();
+    Stmt *else_branch = NULL;
+    while (cur_tok.type == T_ELIF) {
+        int elif_ln = cur_tok.line;
+        advance();
+        expect(T_LPAREN, "(");
+        Expr *elif_cond = parse_expr();
+        expect(T_RPAREN, ")");
+        Stmt *elif_stmt = parse_stmt();
+        Stmt *new_if = malloc(sizeof(Stmt));
+        new_if->kind = STMT_DECL;
+        new_if->line = elif_ln;
+        new_if->u.decl.c = elif_cond;
+        new_if->u.decl.then_branch = elif_stmt;
+        new_if->u.decl.else_branch = NULL;
+
+        if (else_branch == NULL) {
+            else_branch = new_if;
+        } else {
+            Stmt *last = else_branch;
+            while (last->u.decl.else_branch != NULL)
+                last = last->u.decl.else_branch;
+            last->u.decl.else_branch = new_if;
+        }
+    }
+    if (cur_tok.type == T_ELSE) {
+        advance();
+        Stmt *else_stmt = parse_stmt();
+
+        if (else_branch == NULL) {
+            else_branch = else_stmt;
+        } else {
+            Stmt *last = else_branch;
+            while (last->u.decl.else_branch != NULL)
+                last = last->u.decl.else_branch;
+            last->u.decl.else_branch = else_stmt;
+        }
+    }
+    Stmt *s = malloc(sizeof(Stmt));
+    s->kind = STMT_DECL;
+    s->line = ln;
+    s->u.decl.c = cond;
+    s->u.decl.then_branch = then_branch;
+    s->u.decl.else_branch = else_branch;
+
+    return s;
+}
+
 
 Stmt* parse_block() {
     int ln = cur_tok.line;
@@ -596,9 +741,6 @@ Program* parse_program() {
     }
     return p;
 }
-
-/* ---------- Symbol table & semantic analysis ---------- */
-
 typedef struct Sym {
     char *name;
     VarType type;
@@ -636,8 +778,6 @@ Sym* symtable_lookup(SymTable *t, const char *name) {
     for (int i = t->n-1; i >= 0; --i) if (strcmp(t->arr[i].name, name) == 0) return &t->arr[i];
     return NULL;
 }
-
-/* Semantic analyzer state */
 typedef struct {
     SymTable table;
     int scope_level;
@@ -665,8 +805,6 @@ void sem_error(SemCtx *c, int line, const char *fmt, ...) {
     fprintf(stderr, "\n");
     c->errors++;
 }
-
-/* Type checking helpers */
 int is_numeric(VarType t) { return t == TYPE_INT || t == TYPE_FLOAT; }
 
 VarType unify_numeric(VarType a, VarType b) {
@@ -675,7 +813,7 @@ VarType unify_numeric(VarType a, VarType b) {
     return TYPE_INT;
 }
 
-/* Walk expression and infer/check types */
+
 VarType sem_check_expr(SemCtx *c, Expr *e) {
     if (!e) return TYPE_ERROR;
     switch (e->kind) {
@@ -694,24 +832,51 @@ VarType sem_check_expr(SemCtx *c, Expr *e) {
         }
         case EXPR_BINOP: {
             VarType lt = sem_check_expr(c, e->u.bin.left);
-            VarType rt = sem_check_expr(c, e->u.bin.right);
-            char op = e->u.bin.op;
-            if (op == '+' || op == '-' || op == '*' || op == '/') {
-                if (!is_numeric(lt) || !is_numeric(rt)) {
-                    sem_error(c, e->line, "operator '%c' requires numeric operands (found %s and %s)", op, type_name(lt), type_name(rt));
-                    e->inferred_type = TYPE_ERROR; return TYPE_ERROR;
-                }
-                VarType uni = unify_numeric(lt, rt);
-                e->inferred_type = uni; return uni;
-            }
-            sem_error(c, e->line, "unknown binary operator '%c'", op);
-            e->inferred_type = TYPE_ERROR; return TYPE_ERROR;
-        }
-    }
-    return TYPE_ERROR;
-}
+    VarType rt = sem_check_expr(c, e->u.bin.right);
+    OpType op = e->u.bin.op;
 
-/* Check a statement */
+    switch (op) {
+        case OP_ADD:
+        case OP_SUB:
+        case OP_MUL:
+        case OP_DIV:
+            if (!is_numeric(lt) || !is_numeric(rt)) {
+                sem_error(c, e->line,
+                    "operator requires numeric operands (found %s and %s)",
+                    type_name(lt), type_name(rt));
+                return e->inferred_type = TYPE_ERROR;
+            }
+            return e->inferred_type = unify_numeric(lt, rt);
+        case OP_GT:
+        case OP_LT:
+        case OP_GE:
+        case OP_LE:
+            if (!is_numeric(lt) || !is_numeric(rt)) {
+                sem_error(c, e->line,
+                    "relational operator requires numeric operands (found %s and %s)",
+                    type_name(lt), type_name(rt));
+                return e->inferred_type = TYPE_ERROR;
+            }
+            return e->inferred_type = TYPE_BOOL;
+        case OP_EQ:
+        case OP_AND:
+        case OP_OR:
+            if (lt != TYPE_BOOL || rt != TYPE_BOOL) {
+                sem_error(c, e->line,
+                    "logical operator requires boolean operands (found %s and %s)",
+                    type_name(lt), type_name(rt));
+                return e->inferred_type = TYPE_ERROR;
+            }
+            return e->inferred_type = TYPE_BOOL;
+
+        default:
+            sem_error(c, e->line, "unknown operator");
+            return e->inferred_type = TYPE_ERROR;
+            }
+        }
+    return TYPE_ERROR;
+    }
+}
 void sem_check_stmt(SemCtx *c, Stmt *s) {
     if (!s) return;
     switch (s->kind) {
@@ -748,7 +913,6 @@ void sem_check_stmt(SemCtx *c, Stmt *s) {
     }
 }
 
-/* Program semantic check */
 int sem_check_program(Program *p) {
     SemCtx ctx; symtable_init(&ctx.table); ctx.scope_level = 0; ctx.errors = 0;
     for (int i=0;i<p->n;i++) sem_check_stmt(&ctx, p->stmts[i]);
@@ -756,9 +920,6 @@ int sem_check_program(Program *p) {
     symtable_free(&ctx.table);
     return errs;
 }
-
-/* ---------- Utilities to free AST ---------- */
-
 void free_expr(Expr *e) {
     if (!e) return;
     if (e->kind == EXPR_ID) free(e->u.id);
@@ -782,10 +943,6 @@ void free_program(Program *p) {
     free(p->stmts);
     free(p);
 }
-
-/* ---------- Token stream glue (advance / next token) ---------- */
-
-/* advance() frees current token lexeme and fetches next token from lexer-adapter */
 void advance() {
     free_parser_token(&cur_tok);
     cur_tok = get_next_parser_token();
@@ -825,7 +982,7 @@ int main(int argc, char **argv) {
     else
         printf("Analisis semántico completado: %d error(es) encontrados.\n", errors);
 
-    /* free */
+    /*This will free memory*/
     free_program(prog);
     free_parser_token(&cur_tok);
     free(scanner.buf);

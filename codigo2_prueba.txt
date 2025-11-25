@@ -1,6 +1,7 @@
 int a;
 float b;
 bool flag;
+bool endPro;
 
 a = 10;
 b = 5.5;
@@ -19,7 +20,7 @@ z = x + 3 * 2;
 
 bool test;
 test = false;
-
+if(endPro && test)
 {
     int local;
     local = 5;
