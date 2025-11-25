@@ -1,0 +1,45 @@
+int main() {
+    // A structure declaration
+    struct Point {
+        int x;
+        float y;
+        bool exists;
+    }; // A structure declaration is a STMT.
+    
+    // The parser consumes the struct fields using parse_decl() but doesn't store them in AST yet.
+    
+    // Another structure with different fields
+    struct Person {
+        int id;
+        float height;
+        bool is_male;
+        int age;
+    };
+
+    // A simple struct
+    struct Empty {
+        int dummy;
+    };
+
+    // Declarations after struct
+    int start_val = 100;
+    
+    // A struct inside a block
+    {
+        struct Config {
+            int timeout;
+            bool enabled;
+        };
+        int local_var = 5;
+    }
+    
+    // Another declaration
+    float PI = 3.14;
+    
+    // The compiler does not handle struct variable instantiation like:
+    // struct Point p;
+    // float p_x = p.x;
+    // but the structure declaration itself is recognized.
+
+    int final_count = 0;
+}

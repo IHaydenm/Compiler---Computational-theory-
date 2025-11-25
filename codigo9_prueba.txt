@@ -1,0 +1,52 @@
+int main() {
+    int x = 1;
+    int y = 2;
+    int z = 3;
+    float f1 = 1.0;
+    float f2 = 2.0;
+
+    // Simple reassignment
+    x = y; // x is now 2
+    y = z + x; // y is now 3 + 2 = 5
+    z = y * 2; // z is now 10
+    
+    // Float reassignment
+    f1 = f2 + 5.5; // f1 is 7.5
+    f2 = f1 / 3.0; // f2 is 2.5
+
+    // Reassignment using mixed types (int to float promotion)
+    f1 = z; // f1 is 10.0
+
+    // Boolean assignment and reassignment
+    bool running = true;
+    running = !running; // running is false
+    running = running || (x < 10); // running is false || true = true
+    
+    // Reassignment from a complex expression
+    x = (y * 3) - (z / 2); // x = (5*3) - (10/2) = 15 - 5 = 10
+    
+    // Assignment from a comparison
+    bool is_equal = (x == 10); // True
+    
+    // Assignment of float expression
+    f2 = (f1 + f2) * 2.0;
+    
+    // Assignment inside a block
+    {
+        int temp = 5;
+        x = x + temp;
+        f1 = f1 + 1.0;
+    }
+    
+    // Sequence of variable swaps (without a temp)
+    x = x + y; // x = 15
+    y = x - y; // y = 10
+    x = x - y; // x = 5 (y and x swapped)
+    
+    // Final check variables
+    int final_x = x;
+    int final_y = y;
+    int final_z = z;
+    float final_f1 = f1;
+    float final_f2 = f2;
+}

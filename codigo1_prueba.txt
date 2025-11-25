@@ -1,63 +1,40 @@
-struct Point {
-    int x;
-    float y;
-};
+int main;{
+    int a = 10;
+    float b = 5.5;
+    bool flag = true;
 
-struct Circle {
-    float radius;
-    int segments;
-};
+    // Simple assignments
+    int x = a;
+    float y = b * 2.0;
 
-struct Rectangle {
-    int width;
-    int height;
-    float area;
-};
+    // Complex expression
+    float result = (a + 5) * (y - b) / 2.0;
+    
+    // Assignment with type promotion (int to float)
+    float promotion = 20;
 
-int mainVar;
-float anotherVar;
-bool flagTrue;
-bool flagFalse;
-int counter;
-float result;
+    // Assignment of boolean
+    bool is_valid = flag || false;
 
-int main;
-main = 3 + 5;
+    // More arithmetic
+    int sum = a + 20;
+    int diff = 50 - a;
+    int prod = sum * 2;
+    float div_res = promotion / 2.5;
 
-mainVar = 10;
-anotherVar = 2.5;
-flagTrue = true;
-flagFalse = false;
+    // Using identifiers in expressions
+    float final_value = result + div_res + a;
 
-counter = mainVar + 4 - 2;
-result = anotherVar * 3.14 / 2.0;
+    // Integer division
+    int quotient = 25 / 4;
+    int remainder = 25 / 4;
 
-{
-    int localA;
-    float localB;
-    localA = 5;
-    localB = 1.25;
-    result = result + localB * 2;
+    // Boolean assignment from comparison
+    is_valid = (a > 5) && (b < 10.0);
+    
+    // Nested parenthesis in expression
+    int complicated = ( (10 + 5) * 2 ) / 6;
+
+    // Redeclaration (should cause error in semantic analysis)
+    // int x = 1; // Commented out to be accepted by the compiler
 }
-
-{
-    int nestedVar;
-    nestedVar = 7;
-    counter = counter + nestedVar;
-}
-
-int i;
-i = 0;
-while (i < 10) {
-    counter = counter + i;
-    i = i + 1;
-}
-
-struct Vector3 {
-    float x;
-    float y;
-    float z;
-};
-
-int finalResult;
-finalResult = counter + (int)result;

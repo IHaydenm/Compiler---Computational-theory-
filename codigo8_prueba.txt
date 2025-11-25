@@ -1,0 +1,46 @@
+int main() {
+    int a = 2;
+    int b = 3;
+    int c = 4;
+    float d = 5.0;
+
+    // Multiplication and division have higher precedence than addition and subtraction
+    int result1 = a + b * c; // 2 + (3 * 4) = 14
+    int result2 = (a + b) * c; // (2 + 3) * 4 = 20
+    
+    // Mixed arithmetic and float
+    float result3 = a * d / b; // (2 * 5.0) / 3 = 3.333...
+
+    // Relational operators
+    bool is_greater = a + b > c; // 5 > 4 is true
+
+    // Logical operators (AND '&&' has higher precedence than OR '||')
+    bool p = true;
+    bool q = false;
+    bool r = true;
+    
+    bool logic1 = p || q && r; // p || (q && r) is true
+    bool logic2 = (p || q) && r; // (p || q) && r is true
+
+    // Combination of arithmetic and relational
+    bool complex_rel = (a * c) >= (b + d); // 8 >= 8.0 is true
+
+    // Unary operator with logical operator
+    bool not_complex = !(p && q); // !(false) is true
+    
+    // Parenthesized expression assignment
+    int paren_result = ( (a + b) * (c - a) ) / 2; // (5 * 2) / 2 = 5
+
+    // Multi-operator expression
+    float big_exp = a * 2.0 + b / 1.5 - c * d;
+    
+    // Assignment and declaration
+    int x;
+    x = result1;
+    
+    // Assignment of a float to an int
+    // x = result3; // Semantic error
+    
+    // Logical comparison of relational expressions
+    bool final_logic = (a < b) && (c > d || c == c); // true && (false || true) is true
+}

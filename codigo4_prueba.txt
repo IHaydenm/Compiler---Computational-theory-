@@ -1,32 +1,46 @@
-int a;
-float b;
-bool flag;
+int main() {
+    int total = 0;
+    int N = 10;
+    
+    // Standard for loop (init, cond, update are assignments/exprs)
+    for (int i = 0; i < N; i = i + 1) {
+        total = total + i;
+    }
 
-a = 10;
-b = 3.2;
-flag = true;
+    // For loop with pre-declared variable in init (assignment as init)
+    int j = 0;
+    for (j = 1; j <= 5; j = j + 1) {
+        total = total + j;
+    }
 
-x = 5;            // Error: x no declarado
-flag = 3;         // Error: tipo incompatible (int → bool)
+    // For loop with only condition
+    int k = 0;
+    for (; k < 3; ) {
+        k = k + 1;
+    }
+    
+    // For loop with empty init and update, assignment update inside body
+    int l = 0;
+    for (; l < 3; ) {
+        l = l + 1;
+    }
 
-int a;            // Error: redeclaración de 'a'
+    // Nested for loop
+    int outer_sum = 0;
+    for (int m = 1; m < 4; m = m + 1) {
+        for (int n = 1; n < 3; n = n + 1) {
+            outer_sum = outer_sum + m * n;
+        }
+    }
 
-{
-    int b;
-    b = 2;
-    a = b + 3;
+    // Using float in a for loop (cond and update expression)
+    float f_sum = 0.0;
+    for (float f = 0.0; f < 1.5; f = f + 0.5) {
+        f_sum = f_sum + f;
+    }
+    
+    // For loop with declaration in init
+    for (int count = 1; count <= 2; count = count + 1) {
+        int temp = count * 2;
+    }
 }
-
-float val;
-val = a + b;
-
-{
-    bool flag;
-    flag = false;
-    val = val + 1.5;
-}
-
-bool done;
-done = flag;
-
-done = a + 2;     // Error: tipo incompatible

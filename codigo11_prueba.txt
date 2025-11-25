@@ -1,0 +1,43 @@
+int main() {
+    int i = 10;
+    float f = 20.0;
+    bool b = true;
+    
+    // Assignment type mismatch (int to bool)
+    // b = i; // Semantic error: cannot assign int to bool
+    
+    // Assignment type mismatch (bool to float)
+    // f = b; // Semantic error: cannot assign bool to float
+    
+    // Assignment type mismatch (float to int - only int to float is allowed)
+    // i = f; // Semantic error: cannot assign float to int
+    
+    // Arithmetic on non-numeric (will cause semantic error)
+    // int result1 = i + b; // Semantic error: operator requires numeric operands
+    
+    // Relational on non-numeric (will cause semantic error)
+    // bool result2 = b > true; // Semantic error: relational operator requires numeric operands
+
+    // Logical on non-bool (will cause semantic error)
+    // bool result3 = i && f; // Semantic error: logical operator requires boolean operands
+
+    // Unary NOT on non-bool (will cause semantic error)
+    // bool result4 = !i; // Semantic error (the unary parser only allows NOT to be checked semantically)
+
+    // Correct operations
+    float safe_f = i + f;
+    bool safe_b = (i < f);
+    bool safe_logic = b || false;
+    
+    // Loop condition non-bool (will cause semantic error)
+    // while (i) { // Semantic error: condition does not evaluate to bool
+    //    i = i - 1;
+    // }
+    
+    // If condition non-bool (will cause semantic error)
+    // if (f) { // Semantic error: condition does not evaluate to bool
+    //    f = f + 1.0;
+    // }
+
+    int final = 0;
+}

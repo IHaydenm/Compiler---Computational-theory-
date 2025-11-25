@@ -1,0 +1,50 @@
+int main() {
+    int i = 0;
+    int j = 0;
+    int limit = 5;
+    int total_sum = 0;
+    
+    // Nested loop structure: for inside while
+    while (i < 3) {
+        
+        for (j = 1; j <= limit; j = j + 1) {
+            total_sum = total_sum + i * j;
+        }
+
+        i = i + 1;
+    }
+    
+    // Nested loop structure: while inside for
+    for (int m = 1; m <= 3; m = m + 1) {
+        int n = 0;
+        
+        while (n < 2) {
+            total_sum = total_sum + m + n;
+            n = n + 1;
+        }
+    }
+    
+    // Conditional logic inside a loop
+    for (int k = 0; k < 10; k = k + 1) {
+        if (k < 5) {
+            total_sum = total_sum + 1;
+        } else if (k == 5) {
+            total_sum = total_sum + 2;
+        } else {
+            total_sum = total_sum + 3;
+        }
+    }
+    
+    // A complex condition for the loop
+    bool done = false;
+    int count = 0;
+    while (!done && count < 5) {
+        count = count + 1;
+        if (count == 5) {
+            done = true;
+        }
+    }
+    
+    // Final assignment
+    int final_result = total_sum;
+}

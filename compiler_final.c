@@ -279,7 +279,7 @@ LToken lex_next_token() {
 }
 #define MAX_LEX 256
 typedef enum {
-    T_EOF, T_IF, T_ELIF, T_ELSE, T_INT, T_FLOAT, T_BOOL, T_VOID, T_DOUBLE,
+    T_EOF, T_IF, T_ELIF, T_ELSE, T_WHILE, T_FOR, T_INT, T_FLOAT, T_BOOL, T_VOID, T_DOUBLE,
     T_ID, T_INT_LIT, T_FLOAT_LIT, T_TRUE, T_FALSE, T_AND, T_OR, T_NOT,
     T_SEMI, T_EQ, T_PLUS, T_MINUS, T_MUL, T_DIV,
     T_GT, T_LT, T_GE, T_LE,
@@ -372,6 +372,8 @@ Token ltoken_to_parser_token(const LToken *lt) {
             else if (strcmp(lt->lexeme, "true") == 0) t.type = T_TRUE;
             else if (strcmp(lt->lexeme, "false") == 0) t.type = T_FALSE;
             else if (strcmp(lt->lexeme, "struct") == 0) t.type = T_STRUCT;
+            else if (strcmp(lt->lexeme, "while") == 0) t.type = T_WHILE;
+            else if (strcmp(lt->lexeme, "for") == 0) t.type = T_FOR;
             else t.type = T_UNKNOWN;
             break;
         }
@@ -417,18 +419,19 @@ typedef struct Expr {
     } u;
 } Expr;
 
-/* Statements: decl or assignment or block */
-typedef enum { STMT_DECL, STMT_ASSIGN, STMT_BLOCK} StmtKind;
+/* Statements: decl or assignment or block or expr */
+typedef enum { STMT_DECL, STMT_ASSIGN, STMT_BLOCK, STMT_EXPR, STMT_WHILE, STMT_FOR } StmtKind;
 typedef struct Stmt {
     StmtKind kind;
     int line;
     union {
-        struct { VarType vtype; char *id; 
-                Expr *c;
-                struct Stmt *then_branch;
-                struct Stmt *else_branch;} decl;
+        struct { VarType vtype; char *id; Expr *init; 
+                Expr *c; struct Stmt *then_branch; struct Stmt *else_branch;} decl;
         struct { char *id; Expr *expr; } assign;
         struct { struct Stmt **stmts; int n; } block;
+        struct { Expr *expr; } expr_stmt;
+        struct { Expr *cond; struct Stmt *body; } while_stmt;
+        struct { struct Stmt *init; Expr *cond; struct Stmt *update; struct Stmt *body; } for_stmt;
     } u;
 } Stmt;
 
@@ -450,7 +453,7 @@ int expect(TokenType t, const char *errMsg) {
 }
 /*===================FORWARD===================*/
 Expr* parse_expr();
-/*===================FORWARD===================*/
+/*===================FORWARDS===================*/
 VarType parse_type_token(TokenType t) {
     if (t == T_INT) return TYPE_INT;
     if (t == T_FLOAT) return TYPE_FLOAT;
@@ -465,9 +468,15 @@ Stmt* parse_decl() {
     if (cur_tok.type != T_ID) { fprintf(stderr,"Parse error (line %d): expected identifier after type\n", ln); exit(1); }
     char *id = strdup(cur_tok.lexeme);
     advance();
+    Expr *init = NULL;
+    if (cur_tok.type == T_EQ) {
+        advance();
+        init = parse_expr();
+    }
     expect(T_SEMI, "semicolon");
     Stmt *s = malloc(sizeof(Stmt)); s->kind = STMT_DECL; s->line = ln;
-    s->u.decl.vtype = vt; s->u.decl.id = id;
+    s->u.decl.vtype = vt; s->u.decl.id = id; s->u.decl.init = init;
+    s->u.decl.c = NULL; s->u.decl.then_branch = NULL; s->u.decl.else_branch = NULL;
     return s;
 }
 
@@ -652,15 +661,129 @@ Stmt* parse_assign() {
 
 Stmt* parse_block();
 Stmt* parse_cond_decl();
+Stmt* parse_expr_stmt();
+
+TokenType peek_next_parser_token_type() {
+    size_t saved_pos = scanner.pos;
+    int saved_line = scanner.line;
+    int saved_col = scanner.col;
+    LToken lt = lex_next_token();
+    Token t = ltoken_to_parser_token(&lt);
+    TokenType ret = t.type;
+    free_parser_token(&t);
+    free_ltoken(&lt);
+    scanner.pos = saved_pos;
+    scanner.line = saved_line;
+    scanner.col = saved_col;
+    return ret;
+}
+Stmt* parse_while();
+Stmt* parse_for();
 
 Stmt* parse_stmt() {
     if (cur_tok.type == T_INT || cur_tok.type == T_FLOAT || cur_tok.type == T_BOOL) return parse_decl();
-    if (cur_tok.type == T_ID) return parse_assign();
+    if (cur_tok.type == T_ID) {
+        TokenType next = peek_next_parser_token_type();
+        if (next == T_EQ) return parse_assign();
+        else return parse_expr_stmt();
+    }
     if (cur_tok.type == T_LBRACE) return parse_block();
     if(cur_tok.type == T_STRUCT) return parse_struct_decl();
+    if(cur_tok.type == T_WHILE) return parse_while();
+    if(cur_tok.type == T_FOR) return parse_for();
     if(cur_tok.type == T_IF || cur_tok.type == T_ELIF || cur_tok.type == T_ELSE) return parse_cond_decl();
     fprintf(stderr,"Parse error (line %d): unexpected token '%s' at statement start\n", cur_tok.line, cur_tok.lexeme);
     exit(1);
+}
+
+Stmt* parse_expr_stmt() {
+    int ln = cur_tok.line;
+    Expr *e = parse_expr();
+    expect(T_SEMI, "semicolon");
+    Stmt *s = malloc(sizeof(Stmt));
+    s->kind = STMT_EXPR;
+    s->line = ln;
+    s->u.expr_stmt.expr = e;
+    return s;
+}
+
+Stmt* parse_while() {
+    int ln = cur_tok.line;
+    expect(T_WHILE, "while");
+    expect(T_LPAREN, "(");
+    Expr *cond = parse_expr();
+    expect(T_RPAREN, ")");
+    Stmt *body = parse_stmt();
+    Stmt *s = malloc(sizeof(Stmt));
+    s->kind = STMT_WHILE;
+    s->line = ln;
+    s->u.while_stmt.cond = cond;
+    s->u.while_stmt.body = body;
+    return s;
+}
+
+Stmt* parse_for() {
+    int ln = cur_tok.line;
+    expect(T_FOR, "for");
+    expect(T_LPAREN, "(");
+    Stmt *init = NULL;
+    if (cur_tok.type == T_SEMI) {
+        /* empty init */
+    } else if (cur_tok.type == T_INT || cur_tok.type == T_FLOAT || cur_tok.type == T_BOOL) {
+        init = parse_decl();
+    } else if (cur_tok.type == T_ID) {
+        TokenType next = peek_next_parser_token_type();
+        if (next == T_EQ) {
+            init = parse_assign();
+        } else {
+            /* allow expression-stmt as init */
+            init = parse_expr_stmt();
+        }
+    }
+    expect(T_SEMI, ";");
+    Expr *cond = NULL;
+    if (cur_tok.type != T_SEMI) {
+        cond = parse_expr();
+    }
+    expect(T_SEMI, ";");
+    Stmt *update = NULL;
+    if (cur_tok.type != T_RPAREN) {
+        if (cur_tok.type == T_ID) {
+            TokenType next = peek_next_parser_token_type();
+            if (next == T_EQ) {
+                /* parse assignment but WITHOUT consuming a trailing semicolon */
+                int lnupd = cur_tok.line;
+                char *id = strdup(cur_tok.lexeme);
+                advance();
+                expect(T_EQ, "equals");
+                Expr *e = parse_expr();
+                Stmt *s = malloc(sizeof(Stmt)); s->kind = STMT_ASSIGN; s->line = lnupd;
+                s->u.assign.id = id; s->u.assign.expr = e;
+                update = s;
+            } else {
+                /* parse expression as update */
+                Expr *e = parse_expr();
+                Stmt *s = malloc(sizeof(Stmt)); s->kind = STMT_EXPR; s->line = cur_tok.line;
+                s->u.expr_stmt.expr = e;
+                update = s;
+            }
+        } else {
+            Expr *e = parse_expr();
+            Stmt *s = malloc(sizeof(Stmt)); s->kind = STMT_EXPR; s->line = cur_tok.line;
+            s->u.expr_stmt.expr = e;
+            update = s;
+        }
+    }
+    expect(T_RPAREN, ")");
+    Stmt *body = parse_stmt();
+    Stmt *s = malloc(sizeof(Stmt));
+    s->kind = STMT_FOR;
+    s->line = ln;
+    s->u.for_stmt.init = init;
+    s->u.for_stmt.cond = cond;
+    s->u.for_stmt.update = update;
+    s->u.for_stmt.body = body;
+    return s;
 }
 
 Stmt* parse_cond_decl() {
@@ -881,10 +1004,30 @@ void sem_check_stmt(SemCtx *c, Stmt *s) {
     if (!s) return;
     switch (s->kind) {
         case STMT_DECL: {
-            if (symtable_lookup_in_scope(&c->table, s->u.decl.id, c->scope_level)) {
-                sem_error(c, s->line, "redeclaration of '%s' in the same scope", s->u.decl.id);
+            if (s->u.decl.id) {
+                if (symtable_lookup_in_scope(&c->table, s->u.decl.id, c->scope_level)) {
+                    sem_error(c, s->line, "redeclaration of '%s' in the same scope", s->u.decl.id);
+                } else {
+                    symtable_add(&c->table, s->u.decl.id, s->u.decl.vtype, c->scope_level);
+                }
+                if (s->u.decl.init) {
+                    VarType rt = sem_check_expr(c, s->u.decl.init);
+                    if (rt == TYPE_ERROR) return;
+                    if (s->u.decl.vtype == rt) return;
+                    if (s->u.decl.vtype == TYPE_FLOAT && rt == TYPE_INT) {
+                        return;
+                    }
+                    sem_error(c, s->line, "cannot initialize %s with %s for variable '%s'", type_name(rt), type_name(s->u.decl.vtype), s->u.decl.id);
+                }
             } else {
-                symtable_add(&c->table, s->u.decl.id, s->u.decl.vtype, c->scope_level);
+                /* this branch is used by the overloaded IF/ELIF creation */
+                /* check conditional node */
+                VarType condt = sem_check_expr(c, s->u.decl.c);
+                if (condt != TYPE_BOOL) {
+                    sem_error(c, s->line, "condition does not evaluate to bool");
+                }
+                sem_check_stmt(c, s->u.decl.then_branch);
+                if (s->u.decl.else_branch) sem_check_stmt(c, s->u.decl.else_branch);
             }
             return;
         }
@@ -910,6 +1053,29 @@ void sem_check_stmt(SemCtx *c, Stmt *s) {
             sem_leave_scope(c);
             return;
         }
+        case STMT_EXPR: {
+            sem_check_expr(c, s->u.expr_stmt.expr);
+            return;
+        }
+        case STMT_WHILE: {
+            VarType condt = sem_check_expr(c, s->u.while_stmt.cond);
+            if (condt != TYPE_BOOL) sem_error(c, s->line, "condition does not evaluate to bool");
+            sem_check_stmt(c, s->u.while_stmt.body);
+            return;
+        }
+        case STMT_FOR: {
+            /* for introduces a new scope for init/decls */
+            sem_enter_scope(c);
+            if (s->u.for_stmt.init) sem_check_stmt(c, s->u.for_stmt.init);
+            if (s->u.for_stmt.cond) {
+                VarType condt = sem_check_expr(c, s->u.for_stmt.cond);
+                if (condt != TYPE_BOOL) sem_error(c, s->line, "condition does not evaluate to bool");
+            }
+            if (s->u.for_stmt.update) sem_check_stmt(c, s->u.for_stmt.update);
+            sem_check_stmt(c, s->u.for_stmt.body);
+            sem_leave_scope(c);
+            return;
+        }
     }
 }
 
@@ -924,16 +1090,36 @@ void free_expr(Expr *e) {
     if (!e) return;
     if (e->kind == EXPR_ID) free(e->u.id);
     if (e->kind == EXPR_BINOP) { free_expr(e->u.bin.left); free_expr(e->u.bin.right); }
+    if (e->kind == EXPR_UNOP) { free_expr(e->u.un.operand); }
     free(e);
 }
 
 void free_stmt(Stmt *s) {
     if (!s) return;
-    if (s->kind == STMT_DECL) free(s->u.decl.id);
+    if (s->kind == STMT_DECL) {
+        if (s->u.decl.id) free(s->u.decl.id);
+        if (s->u.decl.init) free_expr(s->u.decl.init);
+        if (s->u.decl.c) free_expr(s->u.decl.c);
+        if (s->u.decl.then_branch) free_stmt(s->u.decl.then_branch);
+        if (s->u.decl.else_branch) free_stmt(s->u.decl.else_branch);
+    }
     if (s->kind == STMT_ASSIGN) { free(s->u.assign.id); free_expr(s->u.assign.expr); }
     if (s->kind == STMT_BLOCK) {
         for (int i=0;i<s->u.block.n;i++) free_stmt(s->u.block.stmts[i]);
         free(s->u.block.stmts);
+    }
+    if (s->kind == STMT_EXPR) {
+        free_expr(s->u.expr_stmt.expr);
+    }
+    if (s->kind == STMT_WHILE) {
+        free_expr(s->u.while_stmt.cond);
+        free_stmt(s->u.while_stmt.body);
+    }
+    if (s->kind == STMT_FOR) {
+        if (s->u.for_stmt.init) free_stmt(s->u.for_stmt.init);
+        if (s->u.for_stmt.cond) free_expr(s->u.for_stmt.cond);
+        if (s->u.for_stmt.update) free_stmt(s->u.for_stmt.update);
+        if (s->u.for_stmt.body) free_stmt(s->u.for_stmt.body);
     }
     free(s);
 }
@@ -980,7 +1166,7 @@ int main(int argc, char **argv) {
     if (errors == 0)
         printf("Analisis semantico completado: sin errores.\n");
     else
-        printf("Analisis semántico completado: %d error(es) encontrados.\n", errors);
+        printf("Analisis semantico completado: %d error(es) encontrados.\n", errors);
 
     /*This will free memory*/
     free_program(prog);

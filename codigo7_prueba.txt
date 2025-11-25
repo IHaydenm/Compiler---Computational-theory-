@@ -1,0 +1,46 @@
+int main() {
+    int global_a = 1;
+    int global_b = 2;
+    
+    // Start of Block 1
+    {
+        int a = 10;
+        float b = 20.0;
+        
+        global_a = a; // Assignment to outer scope variable
+        
+        // Start of Block 2 (Nested Scope)
+        {
+            int c = 30;
+            global_b = c;
+            
+            // Redeclaration of 'a' in the inner scope would cause an error
+            // int a = 5; // Semantic error: redeclaration
+            
+            // Assignment using outer variables
+            a = 15;
+        } // End of Block 2: c goes out of scope
+        
+        // 'a' here is the one from Block 1, which is now 15
+        int check_a = a;
+
+    } // End of Block 1: a and b from Block 1 go out of scope
+
+    // Reusing variable names outside the block
+    int a = 99; 
+    
+    // Final check
+    int final_check = global_a + global_b;
+    
+    // Declaration after scope usage
+    bool success = true;
+
+    // More blocks
+    {
+        float temp_f = 1.1;
+    }
+    {
+        int temp_i = 2;
+    }
+    
+}

@@ -1,40 +1,52 @@
-int a;
-float b;
-bool flag;
-bool endPro;
+int main() {
+    int temperature = 30;
+    bool is_hot = false;
+    bool is_cold = false;
 
-a = 10;
-b = 5.5;
-flag = true;
+    if (temperature > 25) {
+        is_hot = true;
+        // Block statement within if
+        int status = 1;
+    }
+    elif (temperature < 10) {
+        is_cold = true;
+    }
+    else {
+        // Between 10 and 25 (inclusive)
+        is_hot = false;
+        is_cold = false;
+    }
 
-int x;
-float y;
-x = a + 5;
-y = b / 2.0;
+    int check_val = 5;
+    
+    if (check_val == 5) {
+        int result = 1;
+    } else {
+        int result = 0;
+    }
 
-float mix;
-mix = x + y;
+    // Nested conditional
+    if (is_hot) {
+        if (temperature > 40) {
+            int too_hot = 1;
+        }
+    }
 
-int z;
-z = x + 3 * 2;
+    // Another conditional check
+    int humidity = 70;
+    if (temperature > 20 && humidity > 60) {
+        int muggy = 1;
+    }
 
-bool test;
-test = false;
-if(endPro && test)
-{
-    int local;
-    local = 5;
-    z = z + local;
+    // Comparing mixed types (int and float)
+    float limit = 29.5;
+    if (temperature > limit) {
+        int exceeded = 1;
+    }
+
+    // Complex boolean condition
+    bool sunny = true;
+    if (is_hot && sunny || is_cold && !sunny) {
+        int complex_decision = 1;
+    }
 }
-
-float division;
-division = (z + y) / 3.0;
-
-int total;
-total = z + a;
-
-bool done;
-done = true;
-
-int endVar;
-endVar = total - 1;
