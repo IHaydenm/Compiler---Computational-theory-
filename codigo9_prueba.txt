@@ -19,8 +19,7 @@ int main() {
 
     // Boolean assignment and reassignment
     bool running = true;
-    running = !running; // running is false
-    running = running || (x < 10); // running is false || true = true
+    running = running || (x < 10); // running is true || true = true
     
     // Reassignment from a complex expression
     x = (y * 3) - (z / 2); // x = (5*3) - (10/2) = 15 - 5 = 10

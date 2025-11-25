@@ -5,7 +5,6 @@ int main() {
     float sum = 0.0;
 
     while (running) {
-        // Statement block for the while body
         {
             counter = counter + 1;
             sum = sum + counter;
@@ -13,11 +12,9 @@ int main() {
             if (counter >= limit) {
                 running = false;
             }
-        } // End of inner block
-
+        }
     }
 
-    // Variable defined outside the loop
     int max_value = 10;
     
     while (max_value > 0) {
@@ -25,71 +22,18 @@ int main() {
         
         if (max_value == 5) {
             bool paused = true;
-            // Variable 'paused' is local to this inner block
         }
-        
     }
 
-    // Another simple while loop
     int i = 0;
     while (i < 3) {
         i = i + 1;
     }
     
-    // Loop with boolean literal condition
     while (false) {
         int unreachable = 1;
     }
 
-    // Using float in while condition (requires numeric comparison)
-    float start = 1.0;
-    while (start < 3.0) {
-        start = start + 0.5;
-    }
-}int main() {
-    int counter = 0;
-    int limit = 5;
-    bool running = true;
-    float sum = 0.0;
-
-    while (running) {
-        // Statement block for the while body
-        {
-            counter = counter + 1;
-            sum = sum + counter;
-        
-            if (counter >= limit) {
-                running = false;
-            }
-        } // End of inner block
-
-    }
-
-    // Variable defined outside the loop
-    int max_value = 10;
-    
-    while (max_value > 0) {
-        max_value = max_value - 1;
-        
-        if (max_value == 5) {
-            bool paused = true;
-            // Variable 'paused' is local to this inner block
-        }
-        
-    }
-
-    // Another simple while loop
-    int i = 0;
-    while (i < 3) {
-        i = i + 1;
-    }
-    
-    // Loop with boolean literal condition
-    while (false) {
-        int unreachable = 1;
-    }
-
-    // Using float in while condition (requires numeric comparison)
     float start = 1.0;
     while (start < 3.0) {
         start = start + 0.5;

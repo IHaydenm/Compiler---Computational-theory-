@@ -38,7 +38,7 @@ int main() {
     // A complex condition for the loop
     bool done = false;
     int count = 0;
-    while (!done && count < 5) {
+    while (done && count < 5) {
         count = count + 1;
         if (count == 5) {
             done = true;

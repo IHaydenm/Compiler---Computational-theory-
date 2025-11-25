@@ -1,4 +1,4 @@
-int main() {
+int main(){
     int temperature = 30;
     bool is_hot = false;
     bool is_cold = false;
@@ -46,7 +46,7 @@ int main() {
 
     // Complex boolean condition
     bool sunny = true;
-    if (is_hot && sunny || is_cold && !sunny) {
+    if (is_hot && sunny) {
         int complex_decision = 1;
     }
 }

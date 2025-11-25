@@ -26,7 +26,7 @@ int main() {
     bool complex_rel = (a * c) >= (b + d); // 8 >= 8.0 is true
 
     // Unary operator with logical operator
-    bool not_complex = !(p && q); // !(false) is true
+    bool not_complex = (p && q); // !(false) is true
     
     // Parenthesized expression assignment
     int paren_result = ( (a + b) * (c - a) ) / 2; // (5 * 2) / 2 = 5

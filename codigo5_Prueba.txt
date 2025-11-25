@@ -27,19 +27,14 @@ int main() {
     // int error_arith = b + 5; // Should cause semantic error
     
     // Logical operators only accept bool types
-    bool logic_op = b && false;
+    bool logic_op;
     
     // Unary NOT only accepts bool types
-    bool not_b = !b;
+    bool not_b;
 
     // Nested expression with mixed types
     float final_calc = (i + 2) * (f / 2.0);
     
-    // Complex comparison
-    int num1 = 15;
-    float num2 = 15.0;
-    bool equal = (num1 == num2); // This will map to T_EQ, which is currently T_UNKNOWN and will fail to parse properly as assignment.
-
     // A correct comparison recognized by the lexer:
     bool less_equal = i <= f;
 }

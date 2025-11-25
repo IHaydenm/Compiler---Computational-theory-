@@ -6,7 +6,7 @@
 
 typedef enum {
     L_T_ID, L_T_KEYWORD, L_T_INT_LITERAL, L_T_FLOAT_LITERAL, L_T_STRING_LITERAL, L_T_STRUCT_LITERAL,
-    L_T_PLUS, L_T_MINUS, L_T_STAR, L_T_SLASH, L_T_PERCENT,
+    L_T_PLUS, L_T_MINUS, L_T_PLUSPLUS, L_T_MINUSMINUS, L_T_STAR, L_T_SLASH, L_T_PERCENT,
     L_T_ASSIGN, L_T_EQ, L_T_NEQ, L_T_LT, L_T_LE, L_T_GT, L_T_GE,
     L_T_AND, L_T_OR, L_T_NOT,
     L_T_SEMICOLON, L_T_COMMA, L_T_LPAREN, L_T_RPAREN, L_T_LBRACE, L_T_RBRACE, L_T_LBRACKET, L_T_RBRACKET,
@@ -23,6 +23,8 @@ const char* ltoken_type_name(LTokenType type) {
         case L_T_STRUCT_LITERAL: return "STRUCT LITERAL";
         case L_T_PLUS: return "PLUS (+)";
         case L_T_MINUS: return "MINUS (-)";
+        case L_T_PLUSPLUS: return "PLUSPLUS (++)";
+        case L_T_MINUSMINUS: return "MINUSMINUS (--)";
         case L_T_STAR: return "MULTIPLY (*)";
         case L_T_SLASH: return "DIVIDE (/)";
         case L_T_PERCENT: return "MODULO (%)";
@@ -51,7 +53,7 @@ const char* ltoken_type_name(LTokenType type) {
 }
 
 const char* keywords[] = {
-    "if","else","while","for","return","int","float","char","void","double", "bool", "true", "false", "struct", "end", "printf", NULL
+    "if","elif","else","while","for","return","int","float","char","void","double", "bool", "true", "false", "struct", "end", "printf", NULL
 };
 
 int isKeyword(const char* token) {
@@ -256,8 +258,14 @@ LToken lex_next_token() {
 
     getch_lex();
     switch (c) {
-        case '+': return make_ltoken(L_T_PLUS, "+", 1, start_line, start_col);
-        case '-': return make_ltoken(L_T_MINUS, "-", 1, start_line, start_col);
+        case '+': {
+            if (match_lex('+')) return make_ltoken(L_T_PLUSPLUS, "++", 2, start_line, start_col);
+            return make_ltoken(L_T_PLUS, "+", 1, start_line, start_col);
+        }
+        case '-': {
+            if (match_lex('-')) return make_ltoken(L_T_MINUSMINUS, "--", 2, start_line, start_col);
+            return make_ltoken(L_T_MINUS, "-", 1, start_line, start_col);
+        }
         case '*': return make_ltoken(L_T_STAR, "*", 1, start_line, start_col);
         case '/': return make_ltoken(L_T_SLASH, "/", 1, start_line, start_col);
         case '%': return make_ltoken(L_T_PERCENT, "%", 1, start_line, start_col);
@@ -281,8 +289,8 @@ LToken lex_next_token() {
 typedef enum {
     T_EOF, T_IF, T_ELIF, T_ELSE, T_WHILE, T_FOR, T_INT, T_FLOAT, T_BOOL, T_VOID, T_DOUBLE,
     T_ID, T_INT_LIT, T_FLOAT_LIT, T_TRUE, T_FALSE, T_AND, T_OR, T_NOT,
-    T_SEMI, T_EQ, T_PLUS, T_MINUS, T_MUL, T_DIV,
-    T_GT, T_LT, T_GE, T_LE,
+    T_SEMI, T_EQ, T_PLUS, T_MINUS, T_MUL, T_DIV, T_KEYWORD, T_PLUSPLUS, T_MINUSMINUS,
+    T_GT, T_LT, T_GE, T_LE, T_EQEQ, T_NEQ,
     T_LBRACE, T_RBRACE, T_LPAREN, T_RPAREN, T_STRUCT, T_UNKNOWN
 } TokenType;
 typedef struct {
@@ -331,6 +339,10 @@ Token ltoken_to_parser_token(const LToken *lt) {
             break;
         case L_T_MINUS: t.type = T_MINUS; 
             break;
+        case L_T_PLUSPLUS: t.type = T_PLUSPLUS;
+            break;
+        case L_T_MINUSMINUS: t.type = T_MINUSMINUS;
+            break;
         case L_T_STAR: t.type = T_MUL; 
             break;
         case L_T_SLASH: t.type = T_DIV; 
@@ -349,8 +361,10 @@ Token ltoken_to_parser_token(const LToken *lt) {
             break;
         case L_T_NOT: t.type = T_NOT;
             break;
-        case L_T_EQ: t.type = T_UNKNOWN; break;
-        break;
+        case L_T_EQ: t.type = T_EQEQ; 
+            break;
+        case L_T_NEQ: t.type = T_NEQ;
+            break;
         case L_T_GT: t.type = T_GT; 
             break;               
         case L_T_LT: t.type = T_LT; 
@@ -401,6 +415,7 @@ const char* type_name(VarType t){
 typedef enum {
     OP_ADD, OP_SUB, OP_MUL, OP_DIV,
     OP_AND, OP_OR, OP_NOT,
+    OP_INC, OP_DEC,
     OP_GT, OP_LT, OP_GE, OP_LE, OP_EQ,
     OP_UNKNOWN
 } OpType;
@@ -420,7 +435,7 @@ typedef struct Expr {
 } Expr;
 
 /* Statements: decl or assignment or block or expr */
-typedef enum { STMT_DECL, STMT_ASSIGN, STMT_BLOCK, STMT_EXPR, STMT_WHILE, STMT_FOR } StmtKind;
+typedef enum { STMT_DECL, STMT_ASSIGN, STMT_BLOCK, STMT_EXPR, STMT_WHILE, STMT_FOR, STMT_IF } StmtKind;
 typedef struct Stmt {
     StmtKind kind;
     int line;
@@ -432,6 +447,7 @@ typedef struct Stmt {
         struct { Expr *expr; } expr_stmt;
         struct { Expr *cond; struct Stmt *body; } while_stmt;
         struct { struct Stmt *init; Expr *cond; struct Stmt *update; struct Stmt *body; } for_stmt;
+        struct { Expr *cond; struct Stmt *then_branch; struct Stmt *else_branch; } if_stmt;
     } u;
 } Stmt;
 
@@ -563,6 +579,12 @@ Expr* parse_primary() {
         int ln = cur_tok.line;
         Expr *e = make_id_expr(cur_tok.lexeme, ln);
         advance();
+        /* handle postfix ++/-- */
+        if (cur_tok.type == T_PLUSPLUS || cur_tok.type == T_MINUSMINUS) {
+            int is_inc = (cur_tok.type == T_PLUSPLUS);
+            advance();
+            return make_unary_expr(is_inc ? OP_INC : OP_DEC, e, ln);
+        }
         return e;
     }
     if (accept(T_LPAREN)) {
@@ -579,6 +601,13 @@ Expr* parse_unary() {
         advance();
         Expr *operand = parse_unary();
         return make_unary_expr(OP_NOT, operand, ln);
+    }
+    if (cur_tok.type == T_PLUSPLUS || cur_tok.type == T_MINUSMINUS) {
+        int ln = cur_tok.line;
+        int is_inc = (cur_tok.type == T_PLUSPLUS);
+        advance();
+        Expr *operand = parse_unary();
+        return make_unary_expr(is_inc ? OP_INC : OP_DEC, operand, ln);
     }
     return parse_primary();
 }
@@ -607,7 +636,7 @@ Expr* parse_add() {
 }
 Expr* parse_rel_expr() {
     Expr *left = parse_add();
-    while (cur_tok.type == T_GT || cur_tok.type == T_LT || cur_tok.type == T_GE || cur_tok.type == T_LE) {
+    while (cur_tok.type == T_GT || cur_tok.type == T_LT || cur_tok.type == T_GE || cur_tok.type == T_LE || cur_tok.type == T_EQEQ || cur_tok.type == T_NEQ) {
         OpType op;
         int ln = cur_tok.line;
         switch (cur_tok.type) {
@@ -615,6 +644,8 @@ Expr* parse_rel_expr() {
             case T_LT: op = OP_LT; break;
             case T_GE: op = OP_GE; break;
             case T_LE: op = OP_LE; break;
+            case T_EQEQ: op = OP_EQ; break;
+            case T_NEQ: op = OP_EQ; break;
             default: op = OP_UNKNOWN; break;
         }
         advance();
@@ -663,6 +694,7 @@ Stmt* parse_block();
 Stmt* parse_cond_decl();
 Stmt* parse_expr_stmt();
 
+/* peek next parser token type by using lexer but restoring scanner state */
 TokenType peek_next_parser_token_type() {
     size_t saved_pos = scanner.pos;
     int saved_line = scanner.line;
@@ -677,11 +709,49 @@ TokenType peek_next_parser_token_type() {
     scanner.col = saved_col;
     return ret;
 }
+// Peek parser token at offset (0 = next token from lexer)
+Token peek_parser_token(int offset) {
+    size_t saved_pos = scanner.pos;
+    int saved_line = scanner.line;
+    int saved_col = scanner.col;
+    Token ret = make_parser_token(T_UNKNOWN, "");
+    for (int k = 0; k <= offset; ++k) {
+        LToken lt = lex_next_token();
+        free_parser_token(&ret);
+        ret = ltoken_to_parser_token(&lt);
+        free_ltoken(&lt);
+    }
+    scanner.pos = saved_pos;
+    scanner.line = saved_line;
+    scanner.col = saved_col;
+    return ret; // caller must free
+}
+
 Stmt* parse_while();
 Stmt* parse_for();
-
 Stmt* parse_stmt() {
-    if (cur_tok.type == T_INT || cur_tok.type == T_FLOAT || cur_tok.type == T_BOOL) return parse_decl();
+    if (cur_tok.type == T_INT || cur_tok.type == T_FLOAT || cur_tok.type == T_BOOL) {
+        Token t1 = peek_parser_token(1); 
+        Token t2 = peek_parser_token(2); 
+        Token t3 = peek_parser_token(3); 
+        Token t4 = peek_parser_token(4); 
+
+        int is_func = 0;
+        if (t1.type == T_ID && t2.type == T_LPAREN && t3.type == T_RPAREN && t4.type == T_LBRACE) {
+            is_func = 1;
+        }
+
+        free_parser_token(&t1); free_parser_token(&t2); free_parser_token(&t3); free_parser_token(&t4);
+        if (is_func) {
+            advance(); 
+            advance(); 
+            expect(T_LPAREN, "(");
+            expect(T_RPAREN, ")");
+            Stmt *body = parse_block();
+            return body;
+        }
+        return parse_decl();
+    }
     if (cur_tok.type == T_ID) {
         TokenType next = peek_next_parser_token_type();
         if (next == T_EQ) return parse_assign();
@@ -726,18 +796,50 @@ Stmt* parse_for() {
     int ln = cur_tok.line;
     expect(T_FOR, "for");
     expect(T_LPAREN, "(");
+
     Stmt *init = NULL;
     if (cur_tok.type == T_SEMI) {
-        /* empty init */
     } else if (cur_tok.type == T_INT || cur_tok.type == T_FLOAT || cur_tok.type == T_BOOL) {
-        init = parse_decl();
-    } else if (cur_tok.type == T_ID) {
-        TokenType next = peek_next_parser_token_type();
-        if (next == T_EQ) {
-            init = parse_assign();
+        VarType vt = parse_type_token(cur_tok.type);
+        int ln_decl = cur_tok.line;
+        advance();
+        if (cur_tok.type != T_ID){
+            fprintf(stderr,"Parse error (line %d): expected identifier after type in for-init\n", ln_decl); exit(1); 
+        }
+        char *id = strdup(cur_tok.lexeme);
+        advance(); 
+        Expr *initexpr = NULL;
+        if (cur_tok.type == T_EQ) {
+            advance();
+            initexpr = parse_expr();
+        }
+        Stmt *d = malloc(sizeof(Stmt)); d->kind = STMT_DECL; d->line = ln_decl;
+        d->u.decl.vtype = vt; d->u.decl.id = id; d->u.decl.init = initexpr;
+        d->u.decl.c = NULL; d->u.decl.then_branch = NULL; d->u.decl.else_branch = NULL;
+        init = d;
+    } else {
+        if (cur_tok.type == T_ID) {
+            TokenType next = peek_next_parser_token_type();
+            if (next == T_EQ) {
+                int lnupd = cur_tok.line;
+                char *id = strdup(cur_tok.lexeme);
+                advance();
+                expect(T_EQ, "equals");
+                Expr *e = parse_expr();
+                Stmt *as = malloc(sizeof(Stmt)); as->kind = STMT_ASSIGN; as->line = lnupd;
+                as->u.assign.id = id; as->u.assign.expr = e;
+                init = as;
+            } else {
+                Expr *e = parse_expr();
+                Stmt *es = malloc(sizeof(Stmt)); es->kind = STMT_EXPR; es->line = cur_tok.line;
+                es->u.expr_stmt.expr = e;
+                init = es;
+            }
         } else {
-            /* allow expression-stmt as init */
-            init = parse_expr_stmt();
+            Expr *e = parse_expr();
+            Stmt *es = malloc(sizeof(Stmt)); es->kind = STMT_EXPR; es->line = cur_tok.line;
+            es->u.expr_stmt.expr = e;
+            init = es;
         }
     }
     expect(T_SEMI, ";");
@@ -745,13 +847,12 @@ Stmt* parse_for() {
     if (cur_tok.type != T_SEMI) {
         cond = parse_expr();
     }
-    expect(T_SEMI, ";");
+    expect(T_SEMI, ";"); 
     Stmt *update = NULL;
     if (cur_tok.type != T_RPAREN) {
         if (cur_tok.type == T_ID) {
             TokenType next = peek_next_parser_token_type();
             if (next == T_EQ) {
-                /* parse assignment but WITHOUT consuming a trailing semicolon */
                 int lnupd = cur_tok.line;
                 char *id = strdup(cur_tok.lexeme);
                 advance();
@@ -761,7 +862,6 @@ Stmt* parse_for() {
                 s->u.assign.id = id; s->u.assign.expr = e;
                 update = s;
             } else {
-                /* parse expression as update */
                 Expr *e = parse_expr();
                 Stmt *s = malloc(sizeof(Stmt)); s->kind = STMT_EXPR; s->line = cur_tok.line;
                 s->u.expr_stmt.expr = e;
@@ -774,6 +874,7 @@ Stmt* parse_for() {
             update = s;
         }
     }
+
     expect(T_RPAREN, ")");
     Stmt *body = parse_stmt();
     Stmt *s = malloc(sizeof(Stmt));
@@ -800,43 +901,36 @@ Stmt* parse_cond_decl() {
         expect(T_LPAREN, "(");
         Expr *elif_cond = parse_expr();
         expect(T_RPAREN, ")");
-        Stmt *elif_stmt = parse_stmt();
+        Stmt *elif_branch = parse_stmt();
         Stmt *new_if = malloc(sizeof(Stmt));
-        new_if->kind = STMT_DECL;
+        new_if->kind = STMT_IF;
         new_if->line = elif_ln;
-        new_if->u.decl.c = elif_cond;
-        new_if->u.decl.then_branch = elif_stmt;
-        new_if->u.decl.else_branch = NULL;
+        new_if->u.if_stmt.cond = elif_cond;
+        new_if->u.if_stmt.then_branch = elif_branch;
+        new_if->u.if_stmt.else_branch = NULL;
 
         if (else_branch == NULL) {
             else_branch = new_if;
         } else {
-            Stmt *last = else_branch;
-            while (last->u.decl.else_branch != NULL)
-                last = last->u.decl.else_branch;
-            last->u.decl.else_branch = new_if;
+           Stmt *last = else_branch;
+            while (last->u.if_stmt.else_branch != NULL)
+                last = last->u.if_stmt.else_branch;
+            last->u.if_stmt.else_branch = new_if;
         }
     }
+
     if (cur_tok.type == T_ELSE) {
-        advance();
+        advance(); 
         Stmt *else_stmt = parse_stmt();
-
-        if (else_branch == NULL) {
-            else_branch = else_stmt;
-        } else {
-            Stmt *last = else_branch;
-            while (last->u.decl.else_branch != NULL)
-                last = last->u.decl.else_branch;
-            last->u.decl.else_branch = else_stmt;
-        }
+        else_branch = else_stmt;
     }
-    Stmt *s = malloc(sizeof(Stmt));
-    s->kind = STMT_DECL;
-    s->line = ln;
-    s->u.decl.c = cond;
-    s->u.decl.then_branch = then_branch;
-    s->u.decl.else_branch = else_branch;
 
+    Stmt *s = malloc(sizeof(Stmt));
+    s->kind = STMT_IF;
+    s->line = ln;
+    s->u.if_stmt.cond = cond;
+    s->u.if_stmt.then_branch = then_branch;
+    s->u.if_stmt.else_branch = else_branch;
     return s;
 }
 
@@ -858,6 +952,26 @@ Stmt* parse_block() {
 Program* parse_program() {
     Program *p = malloc(sizeof(Program)); p->stmts = NULL; p->n = 0;
     while (cur_tok.type != T_EOF) {
+        if ((cur_tok.type == T_INT || cur_tok.type == T_FLOAT || cur_tok.type == T_KEYWORD) ) {
+            Token rt = cur_tok;
+            advance();
+            if (cur_tok.type == T_ID) {
+                char *fname = strdup(cur_tok.lexeme);
+                advance();
+                if (cur_tok.type == T_LPAREN) {
+                    advance();
+                    if (cur_tok.type == T_RPAREN) {
+                        advance();
+                        Stmt *body = parse_block();
+                        p->stmts = realloc(p->stmts, sizeof(Stmt*)*(p->n+1));
+                        p->stmts[p->n++] = body;
+                        continue;
+                    }
+                }
+                free(fname);
+            }
+        }
+
         Stmt *s = parse_stmt();
         p->stmts = realloc(p->stmts, sizeof(Stmt*)*(p->n+1));
         p->stmts[p->n++] = s;
@@ -982,6 +1096,14 @@ VarType sem_check_expr(SemCtx *c, Expr *e) {
             }
             return e->inferred_type = TYPE_BOOL;
         case OP_EQ:
+            /* equality: allow numeric==numeric or bool==bool (returns bool) */
+            if (lt == rt && (is_numeric(lt) || lt == TYPE_BOOL)) {
+                return e->inferred_type = TYPE_BOOL;
+            }
+            sem_error(c, e->line,
+                "equality operator requires operands of same type (found %s and %s)",
+                type_name(lt), type_name(rt));
+            return e->inferred_type = TYPE_ERROR;
         case OP_AND:
         case OP_OR:
             if (lt != TYPE_BOOL || rt != TYPE_BOOL) {
@@ -1063,8 +1185,14 @@ void sem_check_stmt(SemCtx *c, Stmt *s) {
             sem_check_stmt(c, s->u.while_stmt.body);
             return;
         }
+        case STMT_IF: {
+            VarType condt = sem_check_expr(c, s->u.if_stmt.cond);
+            if (condt != TYPE_BOOL) sem_error(c, s->line, "condition does not evaluate to bool");
+            sem_check_stmt(c, s->u.if_stmt.then_branch);
+            if (s->u.if_stmt.else_branch) sem_check_stmt(c, s->u.if_stmt.else_branch);
+            return;
+        }
         case STMT_FOR: {
-            /* for introduces a new scope for init/decls */
             sem_enter_scope(c);
             if (s->u.for_stmt.init) sem_check_stmt(c, s->u.for_stmt.init);
             if (s->u.for_stmt.cond) {
@@ -1114,6 +1242,11 @@ void free_stmt(Stmt *s) {
     if (s->kind == STMT_WHILE) {
         free_expr(s->u.while_stmt.cond);
         free_stmt(s->u.while_stmt.body);
+    }
+    if (s->kind == STMT_IF) {
+        free_expr(s->u.if_stmt.cond);
+        free_stmt(s->u.if_stmt.then_branch);
+        if (s->u.if_stmt.else_branch) free_stmt(s->u.if_stmt.else_branch);
     }
     if (s->kind == STMT_FOR) {
         if (s->u.for_stmt.init) free_stmt(s->u.for_stmt.init);

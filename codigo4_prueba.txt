@@ -3,7 +3,7 @@ int main() {
     int N = 10;
     
     // Standard for loop (init, cond, update are assignments/exprs)
-    for (int i = 0; i < N; i = i + 1) {
+    for (int i = 0; i < N; i + 1) {
         total = total + i;
     }
 

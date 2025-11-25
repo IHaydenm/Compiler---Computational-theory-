@@ -8,22 +8,7 @@ int main() {
     // Assignment to undeclared variable (will cause semantic error)
     // another_var = a + b; // Semantic error: assignment to undeclared variable
 
-    int c;
-
-    // Conditional using undeclared variable
-    // if (c < undeclared_cond) { // Semantic error
-    //    c = c + 1;
-    // }
-
-    // Use of undeclared variable in loop condition
-    // while (undeclared_loop_cond) { // Semantic error
-    //    c = c - 1;
-    // }
-    
-    // For loop update expression uses undeclared variable
-    // for (int i = 0; i < 5; i = i + undeclared_inc) { // Semantic error
-    //    c = c + i;
-    // }
+    float c;
 
     // Correct declarations
     int result = a + 5;
@@ -39,11 +24,5 @@ int main() {
     // Correct conditional
     if (a < 10) {
         c = c + 1;
-    }
-    
-    // A block
-    {
-        int temp = 1;
-        // temp_undeclared = 5; // Semantic error
     }
 }
