@@ -1164,9 +1164,9 @@ int main(int argc, char **argv) {
     int errors = sem_check_program(prog);
 
     if (errors == 0)
-        printf("Analisis semantico completado: sin errores.\n");
+        printf("Semantical analysis completed: without errors.\n");
     else
-        printf("Analisis semantico completado: %d error(es) encontrados.\n", errors);
+        printf("Semantical analysis completed: %d error(s) found.\n", errors);
 
     /*This will free memory*/
     free_program(prog);
