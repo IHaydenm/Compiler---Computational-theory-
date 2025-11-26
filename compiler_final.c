@@ -425,16 +425,15 @@ typedef struct Expr {
     VarType inferred_type;
     int line;
     union {
-        char *id; // EXPR_ID
-        int ival; // EXPR_INT_LIT
-        double fval; // EXPR_FLOAT_LIT
-        int bval; // EXPR_BOOL_LIT
+        char *id; 
+        int ival;
+        double fval; 
+        int bval;
         struct { OpType op; struct Expr *left, *right; } bin;
         struct { OpType op; struct Expr *operand; } un;
     } u;
 } Expr;
 
-/* Statements: decl or assignment or block or expr */
 typedef enum { STMT_DECL, STMT_ASSIGN, STMT_BLOCK, STMT_EXPR, STMT_WHILE, STMT_FOR, STMT_IF } StmtKind;
 typedef struct Stmt {
     StmtKind kind;
