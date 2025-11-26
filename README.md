@@ -96,7 +96,7 @@ Compile the compiler using GCC:
 
 ---
 - Command prompt
-- gcc -std=c99 new.c -o compiler
+- gcc -std=c99 compiler_final.c -o compiler
 ---
 
 ---
@@ -107,7 +107,7 @@ Run on any source file:
 
 ---
 - Command prompt
-- ./compiler input.txt
+- ./compiler.exe input.txt
 ---
 
 This automatically:
