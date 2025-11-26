@@ -1,18 +1,17 @@
 int main() {                       
     int total = 0;                 
                                    
-    for (int i = 0; i < 5;         
-         i = i + 1, printf("%d",i)) { // 5 <-- NOT SUPPORTED (comma + call)
+    for (int i = 0; i < 5;i = i + 1) {
         total = total + i;         
     }                              
                                    
     int x = 10;                    
     int y = 20;                    
                                    
-    if (x < y) {                   
+    if (x < z) {                   
         x = x + 1;                 
     } else {                       
-        y = y + 1;                 
+        y = set + 1;                 
     }                              
                                    
     for (int j = 0; j < 3; j = j + 1) { 
@@ -20,11 +19,7 @@ int main() {
     }                              
                                    
     int k = 0;                     
-    while (k < 5) {                
-        k = k + 1;                 
-    }                              
-                                   
-    return total;                  
+    while (a < 5) {                
+        k = get + 1;                 
+    }                                            
 }                                  
-                                   
-// padded to 30 lines              

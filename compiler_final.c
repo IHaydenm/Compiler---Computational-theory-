@@ -53,7 +53,7 @@ const char* ltoken_type_name(LTokenType type) {
 }
 
 const char* keywords[] = {
-    "if","elif","else","while","for","return","int","float","char","void","double", "bool", "true", "false", "struct", "end", "printf", NULL
+    "if","elif","else","while","for","return","int","float","void","double", "bool", "true", "false", "struct", "end", "printf", NULL
 };
 
 int isKeyword(const char* token) {

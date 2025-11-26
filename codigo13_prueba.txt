@@ -1,12 +1,6 @@
-int add(int a, int b) {<-- NOT SUPPORTED (parameters)
-    int result = a + b;            
-    return result;                 
-}                                  
-
 int main() {                       
     int x = 5;                     
-    int y = 7;                                                        
-    int z = add(x, y);                                                
+    int y = 7;                                                                                                      
     if (z > 10) {                  
         z = z + 1;                 
     } else {                       
@@ -19,9 +13,7 @@ int main() {
     int c = 0;                     
     while (c < 3) {                
         c = c + 1;                 
-    }                              
-                                   
-    return z;                      
+    }                                                   
 }                                  
                                    
 
